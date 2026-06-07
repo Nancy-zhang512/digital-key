@@ -4,7 +4,7 @@ version: 1.0.0
 description: "飞书文档转英文客户技术沟通视频。当用户需要下载飞书文档、翻译成英文技术沟通句子、按40句拆分txt，并生成与既有 old/temp 视频风格一致、字幕严格同步的 mp4 时使用。"
 metadata:
   requires:
-    bins: ["lark-cli", "python3"]
+    bins: ["lark-cli", "python3", "ffmpeg", "ffprobe"]
 ---
 
 # Feishu Doc -> English Tech Communication Video
@@ -13,6 +13,30 @@ metadata:
 > 1. 先阅读 [`../lark-shared/SKILL.md`](../../../../../../.agents/skills/lark-shared/SKILL.md)
 > 2. 再阅读 [`../lark-doc/SKILL.md`](../../../../../../.agents/skills/lark-doc/SKILL.md) 和 [`lark-doc-fetch.md`](../../../../../../.agents/skills/lark-doc/references/lark-doc-fetch.md)
 > 3. 本流程默认使用在线神经语音：`edge-tts`。若本机未安装，先执行 `python3 -m pip install --user edge-tts`
+
+## 依赖说明
+
+### 必需命令
+
+```text
+lark-cli   用于下载飞书文档
+python3    用于翻译整理、逐句 TTS、生成字幕
+ffmpeg     用于读取音频时长、合并音频、渲染 mp4
+ffprobe    用于精确读取 clip / m4a 的 duration
+```
+
+### Python 依赖
+
+```bash
+python3 -m pip install --user edge-tts
+```
+
+### 渲染依赖注意事项
+
+1. 推荐使用带 `libx264` 的 `ffmpeg`
+2. 如使用 `ass` 滤镜烧录字幕，`ffmpeg` 需带 `libass`
+3. 若环境里缺少 `ass` 滤镜，允许退回到 `drawtext` / 逐帧文字渲染方案，但**逐句同步逻辑不能变**
+4. 默认字幕字体是 `Arial`；若当前系统没有 Arial，应选一个接近的无衬线字体并保持底部居中、白字深描边风格
 
 ## 适用场景
 
@@ -25,6 +49,35 @@ metadata:
 5. 且要求**字幕与语音严格同步**
 
 时，使用本 Skill。
+
+## 触发条件
+
+当用户出现以下任一意图时，应主动使用本 Skill：
+
+1. 提到“把飞书文档做成英文技术沟通视频 / mp4 / 带字幕视频”
+2. 提到“要和 old / temp / 现有样例视频风格一致”
+3. 提到“字幕要和声音严格同步 / 不要靠估时”
+4. 提到“按 40 句拆分 txt，再生成 mp4”
+5. 已经给出飞书文档链接，且目标产物明确是**可独立播放的英文沟通视频**
+
+典型关键词：
+
+```text
+飞书文档 / docx / wiki / markdown
+英文技术沟通视频 / mp4 / 配音 / 字幕同步
+40句一个 txt
+old / temp 风格一致
+```
+
+## 不适用场景
+
+以下情况不应直接走本 Skill：
+
+1. 只需要翻译文档，不需要视频产物
+2. 只需要下载或编辑飞书文档内容，应优先走 `lark-doc`
+3. 只需要把本地 HTML 或静态网页发布成链接，应走 `lark-apps`
+4. 只需要生成普通演示文稿，应走 `lark-slides`
+5. 用户没有要求英文客户技术沟通风格，而是需要其他风格配音或完全不同的视频模板
 
 ## 固定风格与参数
 
@@ -335,4 +388,13 @@ concat.txt
 2. 使用的在线声音是什么
 3. 是否采用了逐句同步方案
 4. 是否保留或清理了中间文件
+5. 本次使用的关键依赖或降级方案（例如：`ass` 烧录还是 `drawtext` / 逐帧渲染）
 
+## 交付前检查
+
+交付前至少确认：
+
+1. 每个 mp4 都能正常播放，且包含视频流和音频流
+2. 最终时长与合成音频一致，没有明显提前结束或尾部黑屏过长
+3. 字幕是逐句对应，不存在两句合并或一句拆成多段的意外情况
+4. 输出目录和文件命名符合 `<prefix>_01.txt`、`<prefix>_01.mp4` 这类规则
