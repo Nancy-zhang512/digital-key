@@ -1,5 +1,5 @@
 ---
-name: lark-tech-comm-video
+name: lark-english-video
 version: 1.0.0
 description: "飞书文档转英文客户技术沟通视频。当用户需要下载飞书文档、翻译成英文技术沟通句子、按40句拆分txt，并生成字幕严格同步的 mp4 时使用。"
 metadata:
