@@ -10,8 +10,8 @@ metadata:
 # Feishu Doc -> English Tech Communication Video
 
 > **前置条件：**
-> 1. 先阅读 [`../lark-shared/SKILL.md`](../../../../../../.agents/skills/lark-shared/SKILL.md)
-> 2. 再阅读 [`../lark-doc/SKILL.md`](../../../../../../.agents/skills/lark-doc/SKILL.md) 和 [`lark-doc-fetch.md`](../../../../../../.agents/skills/lark-doc/references/lark-doc-fetch.md)
+> 1. 先阅读 [`../lark-shared/SKILL.md`](../lark-shared/SKILL.md)
+> 2. 再阅读 [`../lark-doc/SKILL.md`](../lark-doc/SKILL.md) 和 [`lark-doc-fetch.md`](../lark-doc/references/lark-doc-fetch.md)
 > 3. 本流程默认使用在线神经语音：`edge-tts`。若本机未安装，先执行 `python3 -m pip install --user edge-tts`
 
 ## 依赖说明
@@ -30,6 +30,27 @@ ffprobe    用于精确读取 clip / m4a 的 duration
 ```bash
 python3 -m pip install --user edge-tts
 ```
+
+### 先检查本机依赖，再决定是否安装
+
+执行前先检查：
+
+```bash
+command -v ffmpeg >/dev/null && ffmpeg -version
+command -v ffprobe >/dev/null && ffprobe -version
+```
+
+处理规则：
+
+1. **如果本机已有 `ffmpeg` / `ffprobe`，直接调用现有命令，不要重复安装。**
+2. **如果缺少 `ffmpeg`，先安装，再继续流程。** 在 macOS 上优先使用：
+
+   ```bash
+   brew install ffmpeg
+   ```
+
+3. 安装完成后，必须再次执行 `command -v ffmpeg` / `command -v ffprobe` 验证。
+4. 若安装失败或验证仍失败，停止视频渲染流程，并明确告知用户当前环境缺少必要依赖。
 
 ### 渲染依赖注意事项
 
@@ -175,6 +196,20 @@ lark-cli docs +fetch --api-version v2 --doc "<doc_url>" --doc-format markdown
 <target_dir>/source_zh.md
 ```
 
+## 🔴 CHECKPOINT：文档下载完成后再继续
+
+在进入翻译和切分前，必须先确认：
+
+1. `docs +fetch` 已成功返回
+2. `data.document.content` 非空
+3. `source_zh.md` 已成功写入本地
+
+若任一条件不成立：
+
+- **不要继续执行翻译、切分、TTS 或渲染**
+- 直接提示当前文档下载不完整或内容为空
+- 结束本次视频生成流程
+
 ### Step 2: 翻译并改写成客户技术沟通英文句子
 
 要求：
@@ -316,6 +351,22 @@ Style: Default,Arial,24,&H00FFFFFF,&H00FFFFFF,&H00202020,&H64000000,0,0,0,0,100,
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 ```
 
+## 🔴 CHECKPOINT：开始批量渲染前确认
+
+在执行任意一段 mp4 渲染前，必须先确认以下条件全部成立：
+
+1. `edge-tts` 可用，且逐句音频已生成
+2. `ffmpeg` / `ffprobe` 已检查通过
+3. `output.m4a` 与 `output.ass` 都存在且非空
+4. 输出目录存在且可写
+5. 本轮仍沿用逐句同步方案，而不是词数估时方案
+
+若任一条件不成立：
+
+- **不要进入批量渲染**
+- 先修复依赖、输入文件或路径问题
+- 修复失败则停止本轮视频生成
+
 ## 最终渲染命令
 
 ```bash
@@ -329,6 +380,35 @@ ffmpeg -y -hide_banner \
   -c:a aac -ar 24000 -ac 1 -b:a 67k \
   -shortest output.mp4
 ```
+
+## 渲染失败重试规则
+
+## 🛑 STOP：渲染超时
+
+如果视频渲染 **10 分钟** 仍未生成完成：
+
+1. 视为**渲染超时**
+2. 立即提示用户当前任务已超时
+3. **直接退出渲染流程**
+4. 保留当前中间产物，方便后续排查
+
+如果最终渲染失败：
+
+1. 先检查错误日志，优先确认：
+   - `ffmpeg` 是否可执行
+   - `ass` 滤镜是否可用
+   - 输入音频 / ASS 文件是否存在且非空
+   - 输出路径是否可写
+2. 修正可恢复问题后，**重新渲染最多 2 次**
+3. 若第 2 次重试后仍失败，**放弃渲染**，不要无限重试
+
+约束：
+
+- **总尝试次数最多 3 次**：首次渲染 + 2 次重试
+- **10 分钟超时后不能静默继续等待**，必须明确提示用户超时并退出
+- 重试时必须沿用同一套逐句同步逻辑，不要退化为按词数估时
+- 若确认是 `ass` 滤镜问题，可改用 `drawtext` / 逐帧文字渲染后再重试
+- 2 次重试仍失败时，保留中间产物用于排查，并向用户明确说明已放弃渲染
 
 ## 推荐产物结构
 
@@ -388,6 +468,15 @@ concat.txt
 170 -> 较低
 250 -> 当前项目标准
 ```
+
+### 4. 渲染失败
+
+按以下顺序处理：
+
+1. 检查本机是否已有 `ffmpeg` / `ffprobe`；没有则先安装
+2. 若是 `ass` 滤镜不可用，切到 `drawtext` / 逐帧渲染方案
+3. 重新渲染，最多再试 2 次
+4. 若仍失败，则放弃渲染，并把失败原因和已保留的中间文件告知用户
 
 ## 交付规则
 
