@@ -36,10 +36,18 @@ metadata:                             # 必填
     - '<规范名称>'
   directories:                        # 必填，列出 skill 涉及的关键目录及其用途
     <dir>: '<用途说明>'
+version: '<版本号>'                   # 可选
+triggers:                             # 可选，触发关键词列表
+  - <关键词>
+inputs:                               # 可选，输入参数说明
+  - name: <参数名>
+    description: <说明>
+    required: true|false
+outputs:                              # 可选，输出产物说明
+  - name: <产物名>
+    description: <说明>
 ---
 ```
-
-**Front Matter 禁止出现的字段**：`version`、`triggers`、`inputs`、`outputs`
 
 ### Body 规范
 
@@ -92,8 +100,8 @@ FM-08  metadata 字段存在
 FM-09  metadata.author = Nancy-zhang512
 FM-10  metadata.knowledge-base 字段存在且非空
 FM-11  metadata.directories 字段存在，至少一个子目录
-FM-12  禁止字段检查：不含 version / triggers / inputs / outputs
-FM-13  字段顺序：name → description → compatibility → metadata
+FM-12  可选字段检查：version / triggers / inputs / outputs 若存在，格式须正确（version 为字符串；triggers 为列表；inputs/outputs 含 name + description 子字段）
+FM-13  字段顺序：name → description → compatibility → metadata → （可选：version / triggers / inputs / outputs）
 ```
 
 ### Step 3 — 检查 Body 章节
