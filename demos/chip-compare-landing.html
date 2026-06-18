@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChipScope — 芯片功能性能对比分析</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #060B18;
+    --surface:  #0F1929;
+    --border:   #1E293B;
+    --cyan:     #00D4FF;
+    --cyan-dim: rgba(0,212,255,0.12);
+    --gold:     #F59E0B;
+    --gold-dim: rgba(245,158,11,0.10);
+    --white:    #E5E7EB;
+    --muted:    #64748B;
+    --mono:     'JetBrains Mono', monospace;
+    --display:  'Space Grotesk', sans-serif;
+    --body:     'Inter', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 48px;
+    height: 60px;
+    background: rgba(6,11,24,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -0.02em;
+    color: var(--white);
+  }
+  .logo span { color: var(--cyan); }
+  nav ul { list-style: none; display: flex; gap: 32px; }
+  nav ul a {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  nav ul a:hover { color: var(--cyan); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: 0;
+    padding: 80px 48px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Oscilloscope wave — signature element */
+  .wave-canvas {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 180px;
+    pointer-events: none;
+  }
+
+  .hero-text { padding-right: 48px; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .eyebrow::before {
+    content: '';
+    display: block;
+    width: 32px; height: 1px;
+    background: var(--cyan);
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-size: clamp(40px, 5.5vw, 72px);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 24px;
+    color: var(--white);
+  }
+  h1 em {
+    font-style: normal;
+    color: var(--cyan);
+  }
+
+  .hero-desc {
+    font-size: 17px;
+    color: var(--muted);
+    max-width: 440px;
+    line-height: 1.7;
+    margin-bottom: 36px;
+  }
+
+  .cta-row { display: flex; gap: 16px; align-items: center; }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--cyan);
+    color: var(--bg);
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 14px;
+    padding: 12px 28px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+
+  .btn-ghost {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    text-decoration: none;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 2px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .btn-ghost:hover { color: var(--white); border-color: var(--white); }
+
+  /* ── CHIP CARD (hero right) ── */
+  .chip-panel {
+    display: flex; flex-direction: column; gap: 12px;
+    padding: 0 0 0 24px;
+  }
+
+  .chip-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 20px 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.25s;
+  }
+  .chip-card:hover { border-color: var(--cyan); }
+  .chip-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--cyan);
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+  .chip-card:hover::before { opacity: 1; }
+
+  .chip-card.active { border-color: var(--cyan); }
+  .chip-card.active::before { opacity: 1; }
+
+  .chip-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 14px;
+  }
+  .chip-name {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--white);
+    letter-spacing: 0.04em;
+  }
+  .chip-type {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+    background: var(--gold-dim);
+    padding: 2px 8px;
+  }
+
+  .chip-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .metric { }
+  .metric-val {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--cyan);
+  }
+  .metric-label {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    text-align: center;
+  }
+  .stat {
+    padding: 32px 16px;
+    border-right: 1px solid var(--border);
+  }
+  .stat:last-child { border-right: none; }
+  .stat-num {
+    font-family: var(--display);
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .stat-num.cyan { color: var(--cyan); }
+  .stat-num.gold { color: var(--gold); }
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ── FLOW ── */
+  .section { padding: 96px 48px; }
+  .section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 16px;
+  }
+  h2 {
+    font-family: var(--display);
+    font-size: clamp(28px, 3.5vw, 44px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 48px;
+    max-width: 560px;
+  }
+
+  .flow {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+  }
+  .flow-step {
+    background: var(--bg);
+    padding: 40px 36px;
+    position: relative;
+  }
+  .step-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--cyan);
+    margin-bottom: 20px;
+  }
+  .step-title {
+    font-family: var(--display);
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    letter-spacing: -0.02em;
+  }
+  .step-desc {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+  .step-code {
+    margin-top: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--cyan);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ── TABLE PREVIEW ── */
+  .table-section { padding: 0 48px 96px; }
+  .table-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .compare-table th {
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--cyan);
+    color: var(--cyan);
+    letter-spacing: 0.06em;
+    font-weight: 500;
+    background: var(--surface);
+  }
+  .compare-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--white);
+    vertical-align: top;
+  }
+  .compare-table tr:hover td { background: var(--surface); }
+  .compare-table .dim-col { color: var(--muted); }
+  .tag-yes {
+    display: inline-block;
+    background: rgba(0,212,255,0.1);
+    color: var(--cyan);
+    padding: 1px 8px;
+    font-size: 10px;
+  }
+  .tag-no {
+    display: inline-block;
+    background: rgba(100,116,139,0.1);
+    color: var(--muted);
+    padding: 1px 8px;
+    font-size: 10px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  footer .logo { font-size: 15px; }
+  footer p {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+
+  @media (max-width: 900px) {
+    nav { padding: 0 24px; }
+    .hero { grid-template-columns: 1fr; padding: 100px 24px 48px; }
+    .chip-panel { padding: 0; }
+    .stats-bar { grid-template-columns: repeat(2, 1fr); }
+    .flow { grid-template-columns: 1fr; }
+    .section, .table-section { padding-left: 24px; padding-right: 24px; }
+    footer { flex-direction: column; gap: 12px; text-align: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Chip<span>Scope</span></div>
+  <ul>
+    <li><a href="#flow">流程</a></li>
+    <li><a href="#compare">对比</a></li>
+    <li><a href="#about">关于</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-text">
+    <div class="eyebrow">RAG-powered 芯片分析</div>
+    <h1>用规格书<br>说话，<em>不靠经验</em></h1>
+    <p class="hero-desc">
+      将 PDF 规格书转化为可检索知识库，逐维度对比 UWB、BLE、Wi-Fi 芯片，
+      每条结论附原文引用，输出本地报告与飞书文档。
+    </p>
+    <div class="cta-row">
+      <a href="#flow" class="btn-primary">查看分析流程 →</a>
+      <a href="#compare" class="btn-ghost">查看对比示例</a>
+    </div>
+  </div>
+
+  <div class="chip-panel">
+    <div class="chip-card active">
+      <div class="chip-header">
+        <span class="chip-name">DW3120</span>
+        <span class="chip-type">UWB</span>
+      </div>
+      <div class="chip-metrics">
+        <div class="metric">
+          <div class="metric-val">6.5 GHz</div>
+          <div class="metric-label">频段</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val">−93 dBm</div>
+          <div class="metric-label">RX 灵敏度</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val">+14 dBm</div>
+          <div class="metric-label">TX 功率</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chip-card">
+      <div class="chip-header">
+        <span class="chip-name">CC2745R10</span>
+        <span class="chip-type">BLE</span>
+      </div>
+      <div class="chip-metrics">
+        <div class="metric">
+          <div class="metric-val">96 MHz</div>
+          <div class="metric-label">主频</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val">1 MB</div>
+          <div class="metric-label">Flash</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val">162 KB</div>
+          <div class="metric-label">SRAM</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chip-card">
+      <div class="chip-header">
+        <span class="chip-name">KW47B42Z83</span>
+        <span class="chip-type">BLE</span>
+      </div>
+      <div class="chip-metrics">
+        <div class="metric">
+          <div class="metric-val">96 MHz</div>
+          <div class="metric-label">主频</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val">2 MB</div>
+          <div class="metric-label">Flash</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val">264 KB</div>
+          <div class="metric-label">SRAM</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Oscilloscope wave signature -->
+  <canvas class="wave-canvas" id="wave"></canvas>
+</section>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat">
+    <div class="stat-num cyan">10</div>
+    <div class="stat-label">已分析芯片</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num gold">2500+</div>
+    <div class="stat-label">知识库切片</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num cyan">13</div>
+    <div class="stat-label">对比维度</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num gold">100%</div>
+    <div class="stat-label">引用可溯源</div>
+  </div>
+</div>
+
+<!-- FLOW -->
+<section class="section" id="flow">
+  <div class="section-label">分析流程</div>
+  <h2>从 PDF 到对比报告，两步完成</h2>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="step-num">Phase 01</div>
+      <div class="step-title">构建知识库</div>
+      <p class="step-desc">将芯片 PDF 规格书放入 spec/ 目录，运行切片脚本提取文本、分段、生成引用标签。</p>
+      <div class="step-code">python build_reference.py</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">Phase 02</div>
+      <div class="step-title">逐维度对比</div>
+      <p class="step-desc">读取 references/ 知识库，按通用维度＋技术专项维度检索原文，每条结论附 citation_tag。</p>
+      <div class="step-code">chip-comparison-analysis</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">Output</div>
+      <div class="step-title">双端输出</div>
+      <p class="step-desc">同时产出本地 Markdown 报告和飞书云文档，表格列宽通过 XML patch 精确控制。</p>
+      <div class="step-code">lark-cli docs +create ...</div>
+    </div>
+  </div>
+</section>
+
+<!-- TABLE PREVIEW -->
+<div class="table-section" id="compare">
+  <div class="table-label">对比总表示例 — BLE 芯片</div>
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>对比维度</th>
+        <th>CC2745</th>
+        <th>KW47</th>
+        <th>TL3225</th>
+        <th>GR5411</th>
+        <th>引用</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="dim-col">规范支持</td>
+        <td>AEC-Q100 G2；ISO 21434</td>
+        <td>AEC-Q100 G2；MISRA C</td>
+        <td>AEC-Q100 G2；BT SIG Mesh</td>
+        <td>AEC-Q100 G2；ISO 11898</td>
+        <td style="color:var(--muted);font-size:10px">【CC2745-unknown-1 Features】…</td>
+      </tr>
+      <tr>
+        <td class="dim-col">封装 / 引脚</td>
+        <td>QFN40 6×6 mm</td>
+        <td>HVQFN48 7×7 mm</td>
+        <td>QFN56 7×7 mm</td>
+        <td>Wettable QFN56</td>
+        <td style="color:var(--muted);font-size:10px">【KW47-1-Features】…</td>
+      </tr>
+      <tr>
+        <td class="dim-col">安全能力</td>
+        <td><span class="tag-yes">TrustZone-M</span></td>
+        <td><span class="tag-yes">PSA L2</span></td>
+        <td><span class="tag-yes">Secure Boot</span></td>
+        <td><span class="tag-yes">AES-256</span></td>
+        <td style="color:var(--muted);font-size:10px">—</td>
+      </tr>
+      <tr>
+        <td class="dim-col">蓝牙版本</td>
+        <td>BT 5.4</td>
+        <td>BT 5.4</td>
+        <td>BT 5.1</td>
+        <td>BT 5.3</td>
+        <td style="color:var(--muted);font-size:10px">—</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- FOOTER -->
+<footer id="about">
+  <div class="logo">Chip<span>Scope</span></div>
+  <p>知识库唯一性 · 强制溯源引用 · 禁止补全推断</p>
+</footer>
+
+<!-- Oscilloscope wave animation -->
+<script>
+const canvas = document.getElementById('wave');
+const ctx = canvas.getContext('2d');
+let t = 0;
+
+function resize() {
+  canvas.width = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+}
+
+function draw() {
+  resize();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const waves = [
+    { freq: 0.012, amp: 28, speed: 0.018, color: 'rgba(0,212,255,0.25)', offset: 0 },
+    { freq: 0.022, amp: 16, speed: 0.028, color: 'rgba(0,212,255,0.12)', offset: 80 },
+    { freq: 0.008, amp: 38, speed: 0.010, color: 'rgba(245,158,11,0.10)', offset: 40 },
+  ];
+
+  waves.forEach(w => {
+    ctx.beginPath();
+    ctx.strokeStyle = w.color;
+    ctx.lineWidth = 1.5;
+    for (let x = 0; x <= canvas.width; x++) {
+      const y = canvas.height * 0.5 +
+        Math.sin((x + w.offset) * w.freq + t * w.speed) * w.amp +
+        Math.sin((x * 0.6 + w.offset) * w.freq * 1.7 + t * w.speed * 0.6) * (w.amp * 0.3);
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  });
+
+  t++;
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+
+</body>
+</html>
