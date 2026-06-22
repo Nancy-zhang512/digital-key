@@ -7,5 +7,5 @@
 ## [1.0.0] - 2026-06-22
 
 ### Added
-- 初始版本发布
-- 增加任务结束 token 使用 & 费用报告（输出至 `records/cost.md`）
+- 任务结束报告章节（token 使用 & 费用输出至 `records/cost.md`）
+- `records/` 目录（CHANGELOG + cost）

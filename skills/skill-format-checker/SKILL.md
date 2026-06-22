@@ -156,3 +156,17 @@ BD-06  章节顺序正确（角色定义 → 目录结构 → 知识库索引 �
 ### Step 5 — 可选：自动修复
 
 若用户明确要求"修复"或"自动改"，则按检查结果对目标 SKILL.md 文件进行修改，修改后重新输出完整 front matter 供用户确认。
+
+---
+
+## 任务结束报告
+
+每次任务完成后，必须输出以下信息，并将记录追加到 `records/cost.md`：
+
+```
+📊 Token 使用情况
+- 输入 Token：xxx
+- 输出 Token：xxx
+- 合计 Token：xxx
+- 估算费用：$x.xxxx USD（Claude Sonnet 4.6：$3/MTok 输入，$15/MTok 输出）
+```

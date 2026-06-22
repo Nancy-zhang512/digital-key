@@ -6,6 +6,10 @@
 
 ## [1.0.0] - 2026-06-22
 
+### Changed
+- 由 `lark-skill-maker`（.agents/skills/）重命名为 `skill-maker`，迁入 digital-key 自开发 Skill 仓库
+
 ### Added
-- 初始版本发布
-- 增加任务结束 token 使用 & 费用报告（输出至 `records/cost.md`）
+- 目录分类：飞书skill → 自开发skill
+- 任务结束报告章节（token 使用 & 费用输出至 `records/cost.md`）
+- `records/` 目录（CHANGELOG + cost）

@@ -53,3 +53,28 @@ Use active voice as default. A control should say exactly what happens when it's
 Treat failure and emptiness as moments for direction, not mood. Explain what went wrong and how to fix it, in the interface's voice rather than a person's. Errors don't apologize, and they are never vague about what happened. An empty screen is an invitation to act.
 
 Keep the register conversational and tuned: plain verbs, sentence case, no filler, with tone matched to the brand and the audience. Let each element do exactly one job. A label labels, an example demonstrates, and nothing quietly does double duty.
+
+## User preferences (Nancy-zhang512)
+
+These preferences apply when designing for this user and should be respected unless the brief explicitly overrides them:
+
+- **Content density**: Keep layout compact and concentrated. Reduce section padding (aim for 48–64px vertical, not 96px+). Content should feel tight and purposeful, not spread across the page.
+- **Navigation**: Do not include a logo in the nav bar. Nav should show links only, right-aligned.
+- **Footer**: Minimal — text only, no logo, centered. Keep footer padding tight (16–24px).
+- **Data tables**: Use larger font size (14px minimum for `td`, 13px for `th`). Tables are the primary information surface — make them readable at a glance.
+- **Hero height**: Prefer 80vh over 100vh. Full-screen heroes feel wasteful for tool/dashboard pages.
+- **Stats bars**: Use compact padding (18–22px vertical) rather than generous spacing.
+
+---
+
+## 任务结束报告
+
+每次任务完成后，必须输出以下信息，并将记录追加到 `records/cost.md`：
+
+```
+📊 Token 使用情况
+- 输入 Token：xxx
+- 输出 Token：xxx
+- 合计 Token：xxx
+- 估算费用：$x.xxxx USD（Claude Sonnet 4.6：$3/MTok 输入，$15/MTok 输出）
+```

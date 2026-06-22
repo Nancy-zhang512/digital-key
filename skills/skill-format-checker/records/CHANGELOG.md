@@ -6,10 +6,8 @@
 
 ## [1.0.0] - 2026-06-22
 
-### Changed
-- 由 `lark-mm` 重命名为 `mm`，迁入 digital-key 自开发 Skill 仓库
-
 ### Added
-- 目录分类：飞书skill → 自开发skill
+- 安装到 Copilot 目录（`~/.agents/skills/`）
+- 目录分类：github skill → 自开发skill
 - 任务结束报告章节（token 使用 & 费用输出至 `records/cost.md`）
 - `records/` 目录（CHANGELOG + cost）
