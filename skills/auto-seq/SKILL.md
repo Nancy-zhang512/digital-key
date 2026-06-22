@@ -1,5 +1,5 @@
 ---
-name: lark-autoseq
+name: auto-seq
 version: 1.0.0
 description: "飞书文档标题自动有序编号工具：将任意飞书文档（包括从本地 Markdown 上传的文档）的标题统一设为 H1/H2/H3 + seq=auto 自动有序编号，并自动去除标题内手动数字前缀，避免重复编号。当用户需要上传 Markdown 文档并整理标题格式、或将已有飞书文档标题改为有序列表时使用。"
 metadata:

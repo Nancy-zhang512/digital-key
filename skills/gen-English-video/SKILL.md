@@ -1,5 +1,5 @@
 ---
-name: lark-english-video
+name: gen-English-video
 version: 1.0.0
 description: "飞书文档转英文客户技术沟通视频。当用户需要下载飞书文档、翻译成英文技术沟通句子、按40句拆分txt，并生成字幕严格同步的 mp4 时使用。"
 metadata:
@@ -36,13 +36,13 @@ python3 -m pip install --user edge-tts
 执行前先检查：
 
 ```bash
-command -v ffmpeg >/dev/null && ffmpeg -version
-command -v ffprobe >/dev/null && ffprobe -version
+command -v ffmpeg >/dev/null
+command -v ffprobe >/dev/null
 ```
 
 处理规则：
 
-1. **如果本机已有 `ffmpeg` / `ffprobe`，直接调用现有命令，不要重复安装。**
+1. **如果本机已有 `ffmpeg` / `ffprobe`，直接调用现有命令，不要重复安装，也不要额外反复打印版本信息。**
 2. **如果缺少 `ffmpeg`，先安装，再继续流程。** 在 macOS 上优先使用：
 
    ```bash
@@ -51,6 +51,17 @@ command -v ffprobe >/dev/null && ffprobe -version
 
 3. 安装完成后，必须再次执行 `command -v ffmpeg` / `command -v ffprobe` 验证。
 4. 若安装失败或验证仍失败，停止视频渲染流程，并明确告知用户当前环境缺少必要依赖。
+
+## 快路径原则
+
+Darwin 视角下，`lark-english-video` 变慢的主要来源不是“字幕规则更严格”，而是**重复依赖检查、逐句串行 TTS、以及失败后盲目重试**。默认应按以下快路径运行：
+
+1. **文档只下载 1 次。** 如果源文档未变，不要重复 `docs +fetch`
+2. **依赖只检查 1 次。** 当前进程已确认 `ffmpeg` / `ffprobe` 可用后，不要在每个分段前重复检查
+3. **逐句 TTS 默认允许有限并发**（建议并发度 4-8），但最终字幕时间轴必须按原句顺序汇总
+4. **duration 探测优先用 `ffprobe`，不要默认用 `ffmpeg -i`**，前者更快、更干净
+5. **最终渲染默认只做 1 次**；只有出现明确失败时才进入重试分支，禁止无故重跑
+6. **重试前先定位可恢复原因**；不要在输入、依赖和命令都没变化时盲目连续重试
 
 ### 渲染依赖注意事项
 
@@ -116,7 +127,9 @@ command -v ffprobe >/dev/null && ffprobe -version
 
 ```text
 TTS: 在线神经语音（edge-tts）
-默认参考男声: en-US-AndrewMultilingualNeural
+默认输出声线:
+  - 美式男声: en-US-AndrewMultilingualNeural
+  - 英式男声: en-GB-RyanNeural
 参考语速: +10%
 输出编码: AAC
 采样率: 24000 Hz
@@ -161,19 +174,34 @@ MarginV: 250
 
 每一个句子必须对应一条 `Dialogue`，不能混句，也不要把一句拆成多条字幕，除非用户明确要求。
 
+### 2a. 默认输出两套男声视频
+
+除非用户明确要求只保留其中一种声线，否则默认同时生成：
+
+1. **美式男声视频**（`en-US-AndrewMultilingualNeural`）
+2. **英式男声视频**（`en-GB-RyanNeural`）
+
+要求：
+
+- 两个视频的**源内容相同**
+- 两个视频的**字幕文本相同**
+- 但两套声音的句长可能不同，因此**各自都要独立计算 duration 和字幕时间轴**
+- **不要**把美式男声的时间轴直接复用到英式男声视频上
+
 ### 3. 如果用户要求“和现有参考视频声音一致”
 
 优先规则：
 
 1. **不要使用本机 `say` 声音**
-2. 使用在线美式男声
+2. 默认同时生成在线**美式男声**和**英式男声**两个版本
 3. 如需匹配既有参考视频，先对候选在线男声做音色相似度对比，再选最接近的声音
 
-本项目里已经验证过的默认参考方案：
+本项目里默认参考方案：
 
 ```text
-voice = en-US-AndrewMultilingualNeural
-rate  = +10%
+US voice = en-US-AndrewMultilingualNeural
+UK voice = en-GB-RyanNeural
+rate     = +10%
 ```
 
 ## 标准流程
@@ -195,6 +223,11 @@ lark-cli docs +fetch --api-version v2 --doc "<doc_url>" --doc-format markdown
 ```text
 <target_dir>/source_zh.md
 ```
+
+**速度优化规则**：
+
+- 同一轮生成里，`source_zh.md` 一旦成功落盘，默认直接复用，不要再次下载同一文档
+- 只有用户更换文档、文档 revision 明确变化、或首次下载失败时，才重新 `docs +fetch`
 
 ## 🔴 CHECKPOINT：文档下载完成后再继续
 
@@ -269,7 +302,7 @@ import asyncio, edge_tts
 async def synth_sentence(text: str, out_path: str):
     communicate = edge_tts.Communicate(
         text,
-        voice='en-US-AndrewMultilingualNeural',
+        voice=VOICE,
         rate='+10%',
     )
     await communicate.save(out_path)
@@ -283,18 +316,26 @@ clips_01/02.mp3
 ...
 ```
 
+**速度优化规则**：
+
+- 默认允许对不同句子做**有限并发 TTS**（建议并发度 4-8），不要强制全串行逐句等待
+- 发生 429 / 限流 / 网络抖动时，再降为更低并发或串行
+- 无论是否并发，最终 `durations` 与字幕 `Dialogue` 的顺序都必须与原句顺序一致
+- **先完成一套英文句子的清洗与切分，再分别生成 US / UK 两套音频和视频**；不要重复翻译同一份文档
+
 ### Step 6: 读取每句真实时长
 
-用 ffmpeg/ffprobe 读取每个 clip 的 duration：
+**优先使用 `ffprobe`** 读取每个 clip 的 duration（比 `ffmpeg -i` 更快）：
 
 ```bash
-ffmpeg -hide_banner -i clip.mp3
+ffprobe -v error -show_entries format=duration \
+  -of default=noprint_wrappers=1:nokey=1 clip.mp3
 ```
 
-从 stderr 提取：
+输出示例：
 
 ```text
-Duration: 00:00:03.42
+3.42
 ```
 
 ### Step 7: 合并音频
@@ -381,6 +422,34 @@ ffmpeg -y -hide_banner \
   -shortest output.mp4
 ```
 
+## 双声线输出规则
+
+同一份 `source_en.md` / `prefix_*.txt` 默认生成两套最终产物：
+
+1. **US 版**
+   - voice: `en-US-AndrewMultilingualNeural`
+   - 建议文件名：`<prefix>_us.mp4`
+2. **UK 版**
+   - voice: `en-GB-RyanNeural`
+   - 建议文件名：`<prefix>_uk.mp4`
+
+执行顺序：
+
+1. 中文原文只下载 1 次
+2. 英文改写只生成 1 份
+3. 每个 `txt` 只切分 1 次
+4. 然后分别对 **US / UK**：
+   - 逐句 TTS
+   - 读取真实 duration
+   - 生成对应的 `output.ass`
+   - 渲染对应的 `output.mp4`
+
+注意：
+
+- 两个版本的**字幕文本内容必须一致**
+- 两个版本的**字幕时间轴允许不同**，并且通常会不同
+- 不要因为已经生成了 US 版，就跳过 UK 版的 duration / ASS 计算
+
 ## 渲染失败重试规则
 
 ## 🛑 STOP：渲染超时
@@ -409,6 +478,7 @@ ffmpeg -y -hide_banner \
 - 重试时必须沿用同一套逐句同步逻辑，不要退化为按词数估时
 - 若确认是 `ass` 滤镜问题，可改用 `drawtext` / 逐帧文字渲染后再重试
 - 2 次重试仍失败时，保留中间产物用于排查，并向用户明确说明已放弃渲染
+- **不要在原因未变化时盲目连试 3 次**；每次重试前必须先判断本轮是否真的做了可恢复修正
 
 ## 推荐产物结构
 
@@ -418,8 +488,10 @@ target_dir/
   source_en.md
   prefix_01.txt
   prefix_02.txt
-  prefix_01.mp4
-  prefix_02.mp4
+  prefix_01_us.mp4
+  prefix_01_uk.mp4
+  prefix_02_us.mp4
+  prefix_02_uk.mp4
 ```
 
 中间文件（**视频生成完成后必须删除**）：
@@ -449,8 +521,9 @@ concat.txt
 如果用户说声音不像：
 
 1. 不要退回本机 `say`
-2. 继续在在线美式男声里换候选
-3. 保持逐句同步流程不变
+2. 先判断用户反馈针对的是 **US 版** 还是 **UK 版**
+3. 在对应口音的在线男声候选里继续调整
+4. 保持逐句同步流程不变
 
 ### 2. 字幕不同步
 
@@ -478,12 +551,20 @@ concat.txt
 3. 重新渲染，最多再试 2 次
 4. 若仍失败，则放弃渲染，并把失败原因和已保留的中间文件告知用户
 
+### 执行速度优化
+
+- **不要重复下载同一份文档**
+- **不要在每段渲染前重复检查 `ffmpeg` / `ffprobe`**
+- 优先使用 `ffprobe` 探测时长，而不是 `ffmpeg -i`
+- 逐句 TTS 默认使用**有限并发**
+- 渲染失败时先定位原因，再决定是否值得重试
+
 ## 交付规则
 
 完成后应明确告诉用户：
 
 1. 生成了哪些 txt / mp4
-2. 使用的在线声音是什么
+2. US / UK 两个版本分别使用的在线声音是什么
 3. 是否采用了逐句同步方案
 4. 中间临时文件已**强制删除**（clips_*/ *.ass *.m4a *.mp3 concat.txt）
 5. 本次使用的关键依赖或降级方案（例如：`ass` 烧录还是 `drawtext` / 逐帧渲染）
