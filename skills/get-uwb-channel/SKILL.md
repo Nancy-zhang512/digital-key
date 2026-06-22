@@ -1,5 +1,5 @@
 ---
-name: lark-uwb-channel-get
+name: get-uwb-channel
 version: 1.0.0
 description: "UWB channel 合规查询与飞书文档更新。当用户需要查询某个国家/地区的 UWB channel（CH5/CH6/CH8/CH9/CH10/CH12/CH13/CH14）要求、给出监管依据、并把结果更新到当前固定飞书文档时使用。"
 metadata:
