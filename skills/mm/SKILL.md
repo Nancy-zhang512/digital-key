@@ -438,3 +438,17 @@ lark-cli mail user_mailbox.drafts send \
 | 读取妙记纪要 | `minutes:minutes:readonly`、`vc:meeting:readonly` |
 | 搜索联系人 | `contact:user.base:readonly` |
 | 发送邮件 | `mail:mail.send` |
+
+---
+
+## 任务结束报告
+
+每次任务完成后，必须输出以下信息，并将记录追加到 `records/cost.md`：
+
+```
+📊 Token 使用情况
+- 输入 Token：xxx
+- 输出 Token：xxx
+- 合计 Token：xxx
+- 估算费用：$x.xxxx USD（Claude Sonnet 4.6：$3/MTok 输入，$15/MTok 输出）
+```

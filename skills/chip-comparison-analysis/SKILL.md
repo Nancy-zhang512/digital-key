@@ -248,3 +248,17 @@ with open('patched.xml', 'w') as f:
 ```bash
 rm -f scratch_*.txt doc.json patched.xml
 ```
+
+---
+
+## 任务结束报告
+
+每次任务完成后，必须输出以下信息，并将记录追加到 `records/cost.md`：
+
+```
+📊 Token 使用情况
+- 输入 Token：xxx
+- 输出 Token：xxx
+- 合计 Token：xxx
+- 估算费用：$x.xxxx USD（Claude Sonnet 4.6：$3/MTok 输入，$15/MTok 输出）
+```

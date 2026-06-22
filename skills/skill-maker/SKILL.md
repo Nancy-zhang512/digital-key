@@ -83,3 +83,17 @@ lark-cli api POST /open-apis/xxx --data '{...}'
 - **认证** — 说明所需 scope，登录用 `lark-cli auth login --domain <name>`
 - **安全** — 写入操作前确认用户意图，建议 `--dry-run` 预览
 - **编排** — 说明数据传递、失败回滚、可并行步骤
+
+---
+
+## 任务结束报告
+
+每次任务完成后，必须输出以下信息，并将记录追加到 `records/cost.md`：
+
+```
+📊 Token 使用情况
+- 输入 Token：xxx
+- 输出 Token：xxx
+- 合计 Token：xxx
+- 估算费用：$x.xxxx USD（Claude Sonnet 4.6：$3/MTok 输入，$15/MTok 输出）
+```

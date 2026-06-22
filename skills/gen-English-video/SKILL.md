@@ -578,3 +578,17 @@ concat.txt
 3. 字幕是逐句对应，不存在两句合并或一句拆成多段的意外情况
 4. 输出目录和文件命名符合 `<prefix>_01.txt`、`<prefix>_01.mp4` 这类规则
 5. 所有中间临时文件（`clips_*/`、`*.ass`、`*.m4a`、`*.mp3`、`concat.txt`）已清理，目录下仅剩最终产物
+
+---
+
+## 任务结束报告
+
+每次任务完成后，必须输出以下信息，并将记录追加到 `records/cost.md`：
+
+```
+📊 Token 使用情况
+- 输入 Token：xxx
+- 输出 Token：xxx
+- 合计 Token：xxx
+- 估算费用：$x.xxxx USD（Claude Sonnet 4.6：$3/MTok 输入，$15/MTok 输出）
+```

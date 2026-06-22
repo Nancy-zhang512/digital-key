@@ -192,3 +192,17 @@ wb.save("pending/活体检测相关专利清单20260613_侵权检查结果.XLSX"
 ---
 
 *本 Skill 仅依据 references/ 知识库中收录的规范文件给出侵权分析意见，不构成正式法律意见。如需正式侵权鉴定，请联系专业知识产权律师。*
+
+---
+
+## 任务结束报告
+
+每次任务完成后，必须输出以下信息，并将记录追加到 `records/cost.md`：
+
+```
+📊 Token 使用情况
+- 输入 Token：xxx
+- 输出 Token：xxx
+- 合计 Token：xxx
+- 估算费用：$x.xxxx USD（Claude Sonnet 4.6：$3/MTok 输入，$15/MTok 输出）
+```
