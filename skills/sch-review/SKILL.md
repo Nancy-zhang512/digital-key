@@ -7,6 +7,7 @@ metadata:
   knowledge-base: references/
   directories:
     - 1-sch
+    - 1-sch/output
     - 2-component
     - 3-platform
     - 4-system

@@ -6,8 +6,10 @@ metadata:
   author: Nancy
   directories:
     - 1-sch
+    - 1-sch/output
     - 2-component
     - 4-system
+    - scripts
 ---
 
 # 原理图数据准备 SKILL
