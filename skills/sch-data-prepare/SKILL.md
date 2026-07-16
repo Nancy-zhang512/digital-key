@@ -1,5 +1,5 @@
 ---
-name: sch-data-prep
+name: sch-data-prepare
 description: "原理图评审数据准备 — 网表提取/BOM匹配/物料系统批量查询，输出结构化JSON供评审使用"
 compatibility: all
 metadata:
@@ -54,24 +54,34 @@ scripts/extract_from_files.py
 
 ---
 
-## 三、IT 物料系统 MCP 批量查询
+## 三、IT 物料系统 MCP 批量查询 → RAG 切片
 
 调用 IT 物料系统 MCP: `http://192.168.29.113:8099/mcp`
 接口: `mt_smart_substitute_import_query(materialCodes=[...], full=true)`
 
 **分批规则**: 每次最多 20 个料号，循环直到全部查完。
 
-| 返回字段 | 用途 |
-|:---|:---|
-| `model` (MPN) | 型号确认 |
-| `preferGrade` (A/B) | 优选等级 |
-| `materialLevel` (Q100/Q200) | 车规等级 |
-| `substitutes[]` | 替代料 |
-| `hasRisk` / `originCountry` | 供应风险 |
-| `price` / `leadTime` | 成本与交期 |
+查询完成后，将结果生成 **JSONL 格式 RAG 知识库切片**，写入 `1-sch/output/material_data.jsonl`，每行一条物料记录：
 
-查询结果写入: `1-sch/output/material_data.json`
+```json
+{
+  "id": "material::<料号>",
+  "source": "IT物料系统MCP",
+  "category": "material",
+  "materialCode": "料号",
+  "model": "MPN型号",
+  "preferGrade": "A/B/C",
+  "materialLevel": "Q100/Q101/Q200",
+  "substitutes": ["替代料号1", "替代料号2"],
+  "hasRisk": true/false,
+  "originCountry": "国家",
+  "price": 0.00,
+  "leadTime": "周数",
+  "text": "料号 <xxx> | 型号 <MPN> | 车规 <Q100> | 优选级 <A> | 替代料 <N个> | 原产地 <CN> | 价格 <¥x.xx>"
+}
+```
 
+> `text` 字段为自然语言摘要，供 sch-review 评审时 RAG 检索使用。
 > 若 MCP 无法连接，跳过此步并在评审报告中标注「物料数据待补充」。
 
 ---
@@ -87,6 +97,6 @@ scripts/extract_from_files.py
 - BOM匹配率: 100%
 - 物料查询:  xxx / xxx 料号（x 批次）
 - 输出文件:  1-sch/output/schematic_data.json
-             1-sch/output/material_data.json
+             1-sch/output/material_data.jsonl  (RAG切片，每行一条物料)
 → 可执行 sch-review 开始评审
 ```

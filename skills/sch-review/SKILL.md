@@ -18,7 +18,7 @@ metadata:
 
 # 原理图设计评审 SKILL
 
-> **前置条件**: 已执行 `sch-data-prep`，产出 `1-sch/output/schematic_data.json` + `material_data.json`
+> **前置条件**: 已执行 `sch-data-prepare`，产出 `1-sch/output/schematic_data.json` + `material_data.jsonl`
 > **评审框架**: 11 大模块，依据 `references/guideline/` 知识库执行
 > **报告输出**: `8-output/`，Markdown + Word 双格式
 
@@ -41,7 +41,7 @@ metadata:
 | 步骤 | 数据来源 | 目的 |
 |:---:|:---|:---|
 | ① | `1-sch/output/schematic_data.json` | 加载元件表 + 网络表 |
-| ② | `1-sch/output/material_data.json` | 加载物料参数（车规/优选级/替代料） |
+| ② | `1-sch/output/material_data.jsonl` | 加载物料参数 RAG 切片（车规/优选级/替代料） |
 | ③ | `references/platform/*.jsonl` | 了解产品平台背景 |
 | ④ | `references/system/*.jsonl` | 读取 SRS / 电源树 / 参数计算 |
 | ⑤ | `references/guideline/*.jsonl` | 加载评审规则知识库 |
@@ -65,7 +65,7 @@ metadata:
 | M4 | 信号完整性 | `WI-RD-060_流媒体摄像头硬件设计规范A1.jsonl` |
 | M5 | EMC 设计 | `WI-RD-060.jsonl` + ISO 16750 / CISPR 25（网络补充） |
 | M6 | 降额校核 | `WI-RD-071_元器件降额设计规范_A0.jsonl` |
-| M7 | 物料评审 | `material_data.json`（车规/优选级/生命周期） |
+| M7 | 物料评审 | `material_data.jsonl` RAG 切片（车规/优选级/生命周期） |
 | M8 | CBB 覆盖评审 | `WI-RD-058-004CMS_CAM原理图设计评审CheckListA1.jsonl` |
 | M9 | DFX 评审 | `WI-RD-058.jsonl` + DFM 规则（网络补充） |
 | M10 | 电气连接检测 | `schematic_data.json` 自动分析 |
