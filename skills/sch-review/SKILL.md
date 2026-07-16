@@ -69,7 +69,7 @@ metadata:
 | M8 | CBB 覆盖评审 | `WI-RD-058-004CMS_CAM原理图设计评审CheckListA1.jsonl` |
 | M9 | DFX 评审 | `WI-RD-058.jsonl` + DFM 规则（网络补充） |
 | M10 | 电气连接检测 | `schematic_data.json` 自动分析 |
-| M11 | 关键参数计算 | `system/CMS054项目_A1_关键参数计算*.jsonl` |
+| M11 | 关键参数计算 | `references/system/*关键参数计算*.jsonl` |
 
 > **详细检查项**: 见 `references/guideline/WI-RD-058-004CMS_CAM原理图设计评审CheckListA1.jsonl`
 > **降额明细**: 按 `WI-RD-071` 逐器件校核，输出降额明细表

@@ -1,6 +1,6 @@
 ---
 name: sch-data-prepare
-description: "原理图评审数据准备 — 网表提取/BOM匹配/物料系统批量查询，输出结构化JSON供评审使用"
+description: "原理图评审数据准备 — 网表提取/BOM匹配/物料系统批量查询，输出 schematic_data.json + material_data.jsonl RAG切片供评审使用"
 compatibility: all
 metadata:
   author: Nancy
@@ -14,7 +14,7 @@ metadata:
 
 # 原理图数据准备 SKILL
 
-> **职责**: 评审前数据就绪，产出 `schematic_data.json` + `material_data.json`
+> **职责**: 评审前数据就绪，产出 `schematic_data.json` + `material_data.jsonl`
 > **下游**: 产出物直接供 `sch-review` skill 使用
 
 ---
