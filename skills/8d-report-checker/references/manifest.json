@@ -1,0 +1,18 @@
+{
+  "knowledge_base": "8D质量报告审核知识库",
+  "version": "1.0",
+  "created": "2026-07-28",
+  "status": "现行有效",
+  "documents": [
+    {
+      "id": "8D-TRAINING-V1",
+      "name": "8D培训材料",
+      "version": "1.0",
+      "source": "8D培训材料.pdf",
+      "pages": 85,
+      "status": "现行有效",
+      "chunks_file": "8d_standard_chunks.json",
+      "total_chunks": 18
+    }
+  ]
+}
