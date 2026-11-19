@@ -1,0 +1,46 @@
+{
+  "summary": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0
+  },
+  "results": [
+    {
+      "name": "skill-format-checker essential rules",
+      "passed": true,
+      "details": {
+        "frontmatter_start": true,
+        "name_field": true,
+        "description_field": true,
+        "compatibility_field": true,
+        "metadata_author": true,
+        "sections_in_order": true
+      }
+    },
+    {
+      "name": "prompt references removed",
+      "passed": true,
+      "details": {
+        "contains_prompt_word": false
+      }
+    },
+    {
+      "name": "zhihuiya translation rules propagated",
+      "passed": true,
+      "details": {
+        "zhihuiya_translate_button_rule": true,
+        "no_self_translate_rule": true,
+        "translation_blocker_rule": true
+      }
+    },
+    {
+      "name": "eval cases updated for translation button flow",
+      "passed": true,
+      "details": {
+        "eval_count_is_4": true,
+        "translation_button_in_expected_output": true,
+        "sync_still_required": true
+      }
+    }
+  ]
+}
